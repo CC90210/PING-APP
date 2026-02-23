@@ -55,7 +55,7 @@ export function calculateWarmth(
 
     score = Math.min(100, Math.max(0, score + boosters));
 
-    let status = WarmthStatus.DEAD;
+    let status: WarmthStatus = WarmthStatus.DEAD;
     if (score >= 60) {
         status = WarmthStatus.GREEN;
     } else if (score >= 30) {
