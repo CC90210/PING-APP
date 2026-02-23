@@ -1,10 +1,11 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import prisma from "./prisma";
 
+/**
+ * @deprecated Use ensureDbUser from '@/lib/auth/ensure-user' instead.
+ * Kept for backward compatibility with existing server components.
+ */
 export async function getOrCreateUser() {
-    if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
-        return null;
-    }
     const { userId: clerkId } = await auth();
 
     if (!clerkId) {
@@ -29,7 +30,7 @@ export async function getOrCreateUser() {
             email: clerkUser.emailAddresses[0].emailAddress,
             name: `${clerkUser.firstName} ${clerkUser.lastName}`,
             settings: {
-                create: {}, // Default settings
+                create: {},
             },
         },
     });
