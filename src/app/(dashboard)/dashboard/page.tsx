@@ -128,7 +128,10 @@ export default async function DashboardPage() {
                                             </div>
                                             <div className="flex items-center gap-3">
                                                 <Badge
-                                                    variant={contact.warmthStatus === "RED" || contact.warmthStatus === "DEAD" ? "destructive" : "secondary"}
+                                                    variant={
+                                                        contact.warmthStatus === "RED" || contact.warmthStatus === "DEAD" ? "destructive" :
+                                                            contact.warmthStatus === "YELLOW" ? "warning" : "secondary"
+                                                    }
                                                     className="font-medium"
                                                 >
                                                     {contact.warmthStatus}
