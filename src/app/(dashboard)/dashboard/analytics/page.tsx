@@ -2,6 +2,8 @@ import prisma from "@/lib/prisma";
 import { getOrCreateUser } from "@/lib/user";
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
 import {
     LineChart,
     TrendingUp,
