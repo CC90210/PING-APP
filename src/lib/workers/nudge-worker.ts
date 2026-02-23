@@ -31,7 +31,7 @@ export const nudgeWorker = new Worker("nudge-generator", async (job) => {
 
         // 2. Generate nudge based on status
         let message = `You haven't talked to ${contact.name} in a while.`;
-        let type = NudgeType.WARMTH_DECAY;
+        let type: NudgeType = NudgeType.WARMTH_DECAY;
         let reason = "Relationship cooling";
 
         if (contact.warmthStatus === 'RED') {
