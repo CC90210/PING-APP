@@ -2,6 +2,9 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import prisma from "./prisma";
 
 export async function getOrCreateUser() {
+    if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
+        return null;
+    }
     const { userId: clerkId } = await auth();
 
     if (!clerkId) {
