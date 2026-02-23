@@ -1,0 +1,203 @@
+// schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(cuid())
+  email           String    @unique
+  name            String?
+  clerkId         String?   @unique
+  timezone        String    @default("America/Toronto")
+  onboardedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  contacts        Contact[]
+  interactions    Interaction[]
+  nudges          Nudge[]
+  connectedChannels ConnectedChannel[]
+  settings        UserSettings?
+}
+
+model UserSettings {
+  id                    String  @id @default(cuid())
+  userId                String  @unique
+  user                  User    @relation(fields: [userId], references: [id])
+
+  dailyDigestEnabled    Boolean @default(true)
+  dailyDigestTime       String  @default("09:00") // HH:mm format
+  weeklyReportEnabled   Boolean @default(true)
+  weeklyReportDay       Int     @default(1) // 0=Sun, 1=Mon...
+  nudgeFrequency        String  @default("balanced") // minimal, balanced, aggressive
+  aiMessageTone         String  @default("casual") // casual, professional, warm
+  pushNotifications     Boolean @default(true)
+}
+
+model Contact {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+
+  // Identity
+  name            String
+  phone           String?
+  email           String?
+  avatarUrl       String?
+  notes           String?   @db.Text
+
+  // Classification
+  category        ContactCategory @default(FRIEND)
+  tags            String[]  // flexible tagging: "client", "investor", "gym buddy"
+  priority        Int       @default(5) // 1-10, 10 being highest priority
+  isFavorite      Boolean   @default(false)
+
+  // Relationship Settings
+  desiredFrequencyDays  Int       @default(14) // how often user wants to interact
+  lastInteractionAt     DateTime?
+  lastInteractionType   String?   // "message", "call", "meeting", "email"
+  lastInteractionChannel String?  // "whatsapp", "imessage", "telegram", "email"
+
+  // Warmth Score (calculated)
+  warmthScore     Float     @default(100) // 0-100, decays over time
+  warmthStatus    WarmthStatus @default(GREEN) // GREEN, YELLOW, RED, DEAD
+
+  // Metadata
+  birthday        DateTime?
+  company         String?
+  role            String?
+  location        String?
+  linkedPlatforms String[]  // ["whatsapp:+1234567890", "telegram:@handle", "imessage:email@x.com"]
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  interactions    Interaction[]
+  nudges          Nudge[]
+
+  @@index([userId, warmthStatus])
+  @@index([userId, lastInteractionAt])
+}
+
+enum ContactCategory {
+  FAMILY
+  FRIEND
+  CLOSE_FRIEND
+  COLLEAGUE
+  CLIENT
+  PROSPECT
+  MENTOR
+  ACQUAINTANCE
+  OTHER
+}
+
+enum WarmthStatus {
+  GREEN   // Active - within desired frequency
+  YELLOW  // Cooling - approaching deadline
+  RED     // Cold - past desired frequency
+  DEAD    // Ghost - 3x past desired frequency, no interaction
+}
+
+model Interaction {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  contactId       String
+  contact         Contact   @relation(fields: [contactId], references: [id])
+
+  // Interaction Details
+  type            InteractionType
+  channel         String    // "whatsapp", "imessage", "telegram", "email", "phone", "in_person", "manual"
+  direction       String    // "inbound", "outbound", "mutual"
+  summary         String?   @db.Text // AI-generated summary of conversation
+  sentiment       String?   // "positive", "neutral", "negative"
+  topicsDiscussed String[]  // AI-extracted topics: ["work", "family", "project X"]
+
+  // Source tracking
+  sourceMessageId String?   // external message ID from platform
+  isAutoLogged    Boolean   @default(true) // false if manually entered
+
+  occurredAt      DateTime
+  createdAt       DateTime  @default(now())
+
+  @@index([contactId, occurredAt])
+  @@index([userId, occurredAt])
+}
+
+enum InteractionType {
+  MESSAGE
+  CALL
+  VIDEO_CALL
+  EMAIL
+  MEETING
+  SOCIAL_MEDIA
+  VOICE_NOTE
+  MANUAL_LOG
+}
+
+model Nudge {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+  contactId       String
+  contact         Contact   @relation(fields: [contactId], references: [id])
+
+  // Nudge Content
+  type            NudgeType
+  message         String    @db.Text // The nudge message shown to user
+  suggestedMessage String?  @db.Text // AI-generated outreach message
+  suggestedChannel String?  // recommended channel to reach out on
+  reason          String?   // "18 days since last contact", "birthday tomorrow"
+
+  // Status
+  status          NudgeStatus @default(PENDING)
+  scheduledFor    DateTime
+  sentAt          DateTime?   // when nudge was delivered to user
+  actionedAt      DateTime?   // when user acted on it
+  actionTaken     String?     // "sent_message", "dismissed", "snoozed"
+  snoozeUntil     DateTime?
+
+  createdAt       DateTime  @default(now())
+
+  @@index([userId, status, scheduledFor])
+}
+
+enum NudgeType {
+  WARMTH_DECAY    // relationship going cold
+  BIRTHDAY        // upcoming birthday
+  FOLLOW_UP       // scheduled follow-up
+  RE_ENGAGE       // haven't talked in a very long time
+  MILESTONE       // "1 year since you met Jake"
+  CUSTOM          // user-set reminder
+}
+
+enum NudgeStatus {
+  PENDING
+  SENT
+  ACTIONED
+  DISMISSED
+  SNOOZED
+}
+
+model ConnectedChannel {
+  id              String    @id @default(cuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id])
+
+  platform        String    // "whatsapp", "imessage", "telegram", "gmail", "google_calendar"
+  status          String    @default("connected") // "connected", "disconnected", "error"
+  credentials     Json?     // encrypted platform credentials/tokens
+  lastSyncAt      DateTime?
+  syncEnabled     Boolean   @default(true)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([userId, platform])
+}
