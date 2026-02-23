@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { prisma } from '@/lib/prisma';
+import prisma from '@/lib/prisma';
 
 if (!process.env.ANTHROPIC_API_KEY) {
     console.warn("ANTHROPIC_API_KEY is missing from environment variables.");
