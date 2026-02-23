@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -58,7 +60,7 @@ export default function OnboardingPage() {
                     {steps.map((s, i) => (
                         <div key={i} className="flex items-center gap-2">
                             <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold ${step > i + 1 ? 'bg-green-100 text-green-600' :
-                                    step === i + 1 ? 'bg-blue-600 text-white' : 'bg-zinc-100 text-zinc-400'
+                                step === i + 1 ? 'bg-blue-600 text-white' : 'bg-zinc-100 text-zinc-400'
                                 }`}>
                                 {step > i + 1 ? <CheckCircle2 className="h-4 w-4" /> : i + 1}
                             </div>
@@ -188,7 +190,7 @@ export default function OnboardingPage() {
                                     {['whatsapp', 'imessage', 'telegram'].map((platform) => (
                                         <div key={platform} className="p-6 bg-white rounded-3xl border border-zinc-100 shadow-sm space-y-4">
                                             <div className={`h-12 w-12 rounded-2xl flex items-center justify-center mx-auto ${platform === 'whatsapp' ? 'bg-green-50 text-green-600' :
-                                                    platform === 'imessage' ? 'bg-blue-50 text-blue-600' : 'bg-sky-50 text-sky-600'
+                                                platform === 'imessage' ? 'bg-blue-50 text-blue-600' : 'bg-sky-50 text-sky-600'
                                                 }`}>
                                                 {platform === 'whatsapp' ? <MessageCircle /> : platform === 'imessage' ? <Smartphone /> : <Globe />}
                                             </div>
