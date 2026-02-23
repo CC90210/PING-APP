@@ -1,5 +1,5 @@
 "use client";
-// Triggering new build for Phase 3 fix verification
+// Final deployment check - triggered build
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
@@ -98,7 +98,7 @@ export function AddContactButton() {
                         <FormField
                             control={form.control}
                             name="name"
-                            render={({ field }) => (
+                            render={({ field }: { field: any }) => (
                                 <FormItem>
                                     <FormLabel>Name</FormLabel>
                                     <FormControl>
@@ -112,7 +112,7 @@ export function AddContactButton() {
                             <FormField
                                 control={form.control}
                                 name="email"
-                                render={({ field }) => (
+                                render={({ field }: { field: any }) => (
                                     <FormItem>
                                         <FormLabel>Email</FormLabel>
                                         <FormControl>
@@ -125,7 +125,7 @@ export function AddContactButton() {
                             <FormField
                                 control={form.control}
                                 name="phone"
-                                render={({ field }) => (
+                                render={({ field }: { field: any }) => (
                                     <FormItem>
                                         <FormLabel>Phone</FormLabel>
                                         <FormControl>
@@ -140,7 +140,7 @@ export function AddContactButton() {
                             <FormField
                                 control={form.control}
                                 name="category"
-                                render={({ field }) => (
+                                render={({ field }: { field: any }) => (
                                     <FormItem>
                                         <FormLabel>Category</FormLabel>
                                         <Select
@@ -167,7 +167,7 @@ export function AddContactButton() {
                             <FormField
                                 control={form.control}
                                 name="desiredFrequencyDays"
-                                render={({ field }) => (
+                                render={({ field }: { field: any }) => (
                                     <FormItem>
                                         <FormLabel>Frequency (Days)</FormLabel>
                                         <FormControl>
