@@ -100,7 +100,7 @@ export default async function AnalyticsPage() {
                             Communication Patterns
                         </h3>
                         <div className="space-y-3">
-                            {patterns.length > 0 ? patterns.map((p) => (
+                            {patterns.length > 0 ? patterns.map((p: any) => (
                                 <div key={p.id} className="bg-white p-4 rounded-2xl border flex items-center justify-between group hover:border-blue-300 transition-colors">
                                     <div className="flex items-center gap-4">
                                         <div className="h-10 w-10 bg-blue-50 text-blue-600 rounded-full flex items-center justify-center font-bold">
@@ -136,7 +136,7 @@ export default async function AnalyticsPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {insights.filter(i => i.type === 'coaching').map(insight => (
+                            {insights.filter((i: any) => i.type === 'coaching').map((insight: any) => (
                                 <div key={insight.id} className="bg-white/10 p-4 rounded-2xl border border-white/20 backdrop-blur-sm">
                                     <p className="font-bold text-lg mb-1">{insight.title}</p>
                                     <p className="text-sm text-blue-50 leading-relaxed mb-3">
@@ -149,7 +149,7 @@ export default async function AnalyticsPage() {
                                     )}
                                 </div>
                             ))}
-                            {insights.filter(i => i.type === 'coaching').length === 0 && (
+                            {insights.filter((i: any) => i.type === 'coaching').length === 0 && (
                                 <p className="text-sm text-blue-100">Analyzing your network activities. Check back tomorrow for personalized coaching advice.</p>
                             )}
                         </CardContent>
