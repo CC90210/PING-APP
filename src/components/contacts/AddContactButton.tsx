@@ -39,16 +39,23 @@ const formSchema = z.object({
     name: z.string().min(1, "Name is required"),
     email: z.string().email().optional().or(z.literal("")),
     phone: z.string().optional().or(z.literal("")),
-    category: z.nativeEnum(ContactCategory).default(ContactCategory.FRIEND),
-    desiredFrequencyDays: z.coerce.number().min(1).default(14),
+    category: z.nativeEnum(ContactCategory),
+    desiredFrequencyDays: z.any().transform((v) => Number(v)),
 });
+
+type FormValues = {
+    name: string;
+    email: string;
+    phone: string;
+    category: ContactCategory;
+    desiredFrequencyDays: number;
+};
 
 export function AddContactButton() {
     const [open, setOpen] = useState(false);
     const router = useRouter();
-
-    const form = useForm<z.infer<typeof formSchema>>({
-        resolver: zodResolver(formSchema),
+    const form = useForm<FormValues>({
+        resolver: zodResolver(formSchema) as any,
         defaultValues: {
             name: "",
             email: "",
