@@ -16,6 +16,7 @@ model User {
   clerkId         String?   @unique
   timezone        String    @default("America/Toronto")
   onboardedAt     DateTime?
+  expoPushToken   String?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
@@ -24,6 +25,8 @@ model User {
   nudges          Nudge[]
   connectedChannels ConnectedChannel[]
   settings        UserSettings?
+  insights        RelationshipInsight[]
+  patterns        CommunicationPattern[]
 }
 
 model UserSettings {
@@ -51,6 +54,11 @@ model Contact {
   email           String?
   avatarUrl       String?
   notes           String?   @db.Text
+
+  // LinkedIn Info (Phase 3)
+  linkedinUrl       String?
+  linkedinId        String?
+  linkedinHeadline  String?
 
   // Classification
   category        ContactCategory @default(FRIEND)
@@ -80,9 +88,53 @@ model Contact {
 
   interactions    Interaction[]
   nudges          Nudge[]
+  insights        RelationshipInsight[]
+  pattern         CommunicationPattern?
 
   @@index([userId, warmthStatus])
   @@index([userId, lastInteractionAt])
+}
+
+model RelationshipInsight {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  contactId   String?  // null for general insights
+  contact     Contact? @relation(fields: [contactId], references: [id])
+  
+  type        String   // "pattern" | "reciprocity" | "trajectory" | "coaching" | "prediction"
+  title       String   // "Jake responds best on Tuesdays"
+  body        String   @db.Text // Full insight text
+  actionable  Boolean  @default(false) // Does this have a CTA?
+  actionText  String?  // "Send a message now"
+  
+  confidence  Float    @default(0.7) // AI confidence level
+  isRead      Boolean  @default(false)
+  
+  validUntil  DateTime? // Some insights expire
+  createdAt   DateTime @default(now())
+  
+  @@index([userId, createdAt])
+  @@index([userId, contactId])
+}
+
+model CommunicationPattern {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  contactId   String   @unique
+  contact     Contact  @relation(fields: [contactId], references: [id])
+  
+  preferredDay        Int?    // 0-6 (Sun-Sat)
+  preferredHour       Int?    // 0-23
+  preferredChannel    String? // most used channel
+  avgResponseTimeHrs  Float?  // average response time in hours
+  initiationRatio     Float?  // 0-1, >0.5 means user initiates more
+  frequencyTrend      String? // "increasing" | "stable" | "decreasing"
+  
+  calculatedAt  DateTime @default(now())
+  
+  @@index([userId])
 }
 
 enum ContactCategory {
