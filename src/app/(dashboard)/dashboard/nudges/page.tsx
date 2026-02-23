@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import prisma from "@/lib/prisma";
 import { getOrCreateUser } from "@/lib/user";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
