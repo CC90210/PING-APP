@@ -1,21 +1,29 @@
-export { auth as middleware } from "@/lib/auth";
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+
+// Lightweight middleware — only checks for session cookie presence.
+// Full auth validation happens in API routes via withAuth().
+// This avoids importing Prisma/bcrypt which don't work on Edge Runtime.
+export function middleware(request: NextRequest) {
+    const sessionCookie =
+        request.cookies.get("authjs.session-token") ??
+        request.cookies.get("__Secure-authjs.session-token");
+
+    if (!sessionCookie) {
+        const loginUrl = new URL("/login", request.url);
+        loginUrl.searchParams.set("callbackUrl", request.url);
+        return NextResponse.redirect(loginUrl);
+    }
+
+    return NextResponse.next();
+}
 
 export const config = {
     matcher: [
         "/dashboard/:path*",
-        "/contacts/:path*",
-        "/nudges/:path*",
-        "/outreach/:path*",
-        "/analytics/:path*",
-        "/channels/:path*",
-        "/settings/:path*",
         "/onboarding/:path*",
-        "/import/:path*",
         "/api/contacts/:path*",
         "/api/nudges/:path*",
-        "/api/outreach/:path*",
         "/api/dashboard/:path*",
-        "/api/analytics/:path*",
-        "/api/settings/:path*",
     ],
 };
