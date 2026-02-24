@@ -65,13 +65,13 @@ export default async function NudgesPage() {
                                     Ping {nudge.contact.name}
                                 </CardTitle>
                                 <p className="text-muted-foreground text-sm leading-relaxed">
-                                    {nudge.message}
+                                    {nudge.body}
                                 </p>
                             </CardHeader>
                             <CardContent className="pb-3">
                                 <div className="bg-zinc-50 p-4 rounded-xl border border-zinc-100">
                                     <p className="text-xs font-bold text-zinc-500 uppercase tracking-widest mb-1">Context</p>
-                                    <p className="text-sm font-medium text-zinc-700">{nudge.reason}</p>
+                                    <p className="text-sm font-medium text-zinc-700">{nudge.suggestedAction || nudge.title}</p>
                                 </div>
                             </CardContent>
                             <CardFooter className="flex gap-2 pt-2">

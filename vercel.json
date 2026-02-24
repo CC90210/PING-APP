@@ -1,0 +1,12 @@
+{
+    "crons": [
+        {
+            "path": "/api/cron/warmth-decay",
+            "schedule": "0 * * * *"
+        },
+        {
+            "path": "/api/cron/generate-nudges",
+            "schedule": "0 */4 * * *"
+        }
+    ]
+}

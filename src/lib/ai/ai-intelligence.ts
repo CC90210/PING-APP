@@ -38,8 +38,8 @@ export async function analyzePatterns(userId: string, contactId: string) {
         dayCounts[day] = (dayCounts[day] || 0) + 1;
         hourCounts[hour] = (hourCounts[hour] || 0) + 1;
 
-        if (i.direction === 'outbound') outboundCount++;
-        else if (i.direction === 'inbound') inboundCount++;
+        if (i.direction === 'OUTBOUND') outboundCount++;
+        else if (i.direction === 'INBOUND') inboundCount++;
     });
 
     const preferredDay = parseInt(Object.entries(dayCounts).sort((a, b) => b[1] - a[1])[0][0]);
@@ -53,14 +53,14 @@ export async function analyzePatterns(userId: string, contactId: string) {
             preferredDay,
             preferredHour,
             initiationRatio,
-            calculatedAt: new Date()
+            lastAnalyzedAt: new Date()
         },
         create: {
-            userId,
             contactId,
             preferredDay,
             preferredHour,
-            initiationRatio
+            initiationRatio,
+            lastAnalyzedAt: new Date()
         }
     });
 

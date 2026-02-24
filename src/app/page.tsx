@@ -37,11 +37,11 @@ export default function LandingPage() {
           </div>
 
           <div className="flex items-center gap-3">
-            <Link href="/sign-in" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors px-4 py-2">
+            <Link href="/login" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors px-4 py-2">
               Log in
             </Link>
             <Link
-              href="/sign-up"
+              href="/register"
               className="text-sm font-semibold bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl shadow-lg shadow-blue-600/20 transition-all hover:shadow-blue-600/30"
             >
               Get Started Free
@@ -78,7 +78,7 @@ export default function LandingPage() {
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <Link
-                href="/sign-up"
+                href="/register"
                 className="inline-flex items-center h-14 px-8 bg-slate-900 text-white hover:bg-slate-800 text-lg font-bold rounded-2xl shadow-xl transition-all"
               >
                 Get Started Free
@@ -253,7 +253,7 @@ export default function LandingPage() {
                   "Basic nudges",
                 ]}
                 cta="Get Started"
-                ctaLink="/sign-up"
+                ctaLink="/register"
                 highlighted={false}
               />
               <PricingCard
@@ -269,7 +269,7 @@ export default function LandingPage() {
                   "Voice notes",
                 ]}
                 cta="Start Pro Trial"
-                ctaLink="/sign-up"
+                ctaLink="/register"
                 highlighted={true}
               />
               <PricingCard
@@ -285,7 +285,7 @@ export default function LandingPage() {
                   "Custom branding",
                 ]}
                 cta="Contact Sales"
-                ctaLink="/sign-up"
+                ctaLink="/register"
                 highlighted={false}
               />
             </div>
@@ -322,7 +322,7 @@ export default function LandingPage() {
             </p>
             <div className="mt-8 relative z-10">
               <Link
-                href="/sign-up"
+                href="/register"
                 className="inline-flex items-center h-16 px-10 bg-white text-blue-600 hover:bg-blue-50 text-xl font-extrabold rounded-2xl shadow-xl transition-all"
               >
                 Get Started Free

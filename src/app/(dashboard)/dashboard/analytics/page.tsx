@@ -29,9 +29,9 @@ export default async function AnalyticsPage() {
     });
 
     const patterns = await prisma.communicationPattern.findMany({
-        where: { userId: user.id },
+        where: { contact: { userId: user.id } },
         include: { contact: true },
-        orderBy: { calculatedAt: "desc" },
+        orderBy: { updatedAt: "desc" },
         take: 5
     });
 

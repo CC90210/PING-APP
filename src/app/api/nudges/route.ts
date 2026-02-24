@@ -1,41 +1,34 @@
 import { NextResponse } from "next/server";
-import { ensureDbUser } from "@/lib/auth/ensure-user";
+import { withAuth } from "@/lib/auth-guard";
 import prisma from "@/lib/prisma";
 
-export async function GET() {
-    try {
-        const user = await ensureDbUser();
-
-        const nudges = await prisma.nudge.findMany({
-            where: {
-                userId: user.id,
-                status: "PENDING",
-            },
-            include: {
-                contact: {
-                    select: {
-                        id: true,
-                        name: true,
-                        warmthStatus: true,
-                        warmthScore: true,
-                        avatarUrl: true,
-                        phone: true,
-                        email: true,
-                    },
+export const GET = withAuth(async (user) => {
+    const nudges = await prisma.nudge.findMany({
+        where: {
+            userId: user.id,
+            status: { in: ["PENDING", "SNOOZED"] },
+            OR: [
+                { snoozedUntil: null },
+                { snoozedUntil: { lte: new Date() } },
+            ],
+        },
+        orderBy: [{ urgency: "desc" }, { createdAt: "desc" }],
+        take: 20,
+        include: {
+            contact: {
+                select: {
+                    id: true,
+                    name: true,
+                    avatarUrl: true,
+                    warmthStatus: true,
+                    warmthScore: true,
+                    phone: true,
+                    email: true,
+                    category: true,
                 },
             },
-            orderBy: { scheduledFor: "asc" },
-        });
+        },
+    });
 
-        return NextResponse.json({ nudges });
-    } catch (error: any) {
-        console.error("[NUDGES_GET]", error);
-        if (error.message === "Unauthorized") {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-        return NextResponse.json(
-            { error: "Internal server error" },
-            { status: 500 }
-        );
-    }
-}
+    return NextResponse.json({ nudges });
+});

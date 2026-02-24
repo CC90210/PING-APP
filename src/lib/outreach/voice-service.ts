@@ -21,7 +21,7 @@ export async function generateVoiceNoteTalkingPoints(contactId: string, userId: 
     const systemPrompt = `You are Ping's voice note assistant. You help users know what to say in a quick 15-second voice message. Suggest 3 concise bullet points.`;
 
     const userPrompt = `Contact: ${contact.name} (${contact.category})
-  Last topics: ${contact.interactions.flatMap(i => i.topicsDiscussed).join(', ') || 'Unknown'}
+  Last topics: ${contact.interactions.flatMap(i => i.topics).join(', ') || 'Unknown'}
   Summary: ${contact.interactions[0]?.summary || 'None'}
   
   What should I say in a quick voice note? Return as a JSON array of strings.`;

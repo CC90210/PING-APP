@@ -1,33 +1,37 @@
 import { NextResponse } from "next/server";
-import { ensureDbUser } from "@/lib/auth/ensure-user";
+import { withAuth } from "@/lib/auth-guard";
 import prisma from "@/lib/prisma";
 
-export async function GET() {
-    try {
-        const user = await ensureDbUser();
+export const GET = withAuth(async (user) => {
+    const contacts = await prisma.contact.findMany({
+        where: { userId: user.id, isArchived: false },
+        select: { warmthStatus: true },
+    });
 
-        const contacts = await prisma.contact.findMany({
-            where: { userId: user.id },
-            select: { warmthStatus: true },
-        });
+    const stats = {
+        total: contacts.length,
+        green: contacts.filter((c: any) => c.warmthStatus === "GREEN").length,
+        yellow: contacts.filter((c: any) => c.warmthStatus === "YELLOW").length,
+        red: contacts.filter((c: any) => c.warmthStatus === "RED").length,
+        dead: contacts.filter((c: any) => c.warmthStatus === "DEAD").length,
+        maintenanceRate: 0,
+        weeklyInteractions: 0,
+        pendingNudges: 0,
+    };
 
-        const stats = {
-            total: contacts.length,
-            green: contacts.filter((c) => c.warmthStatus === "GREEN").length,
-            yellow: contacts.filter((c) => c.warmthStatus === "YELLOW").length,
-            red: contacts.filter((c) => c.warmthStatus === "RED").length,
-            dead: contacts.filter((c) => c.warmthStatus === "DEAD").length,
-        };
+    stats.maintenanceRate =
+        stats.total > 0 ? Math.round((stats.green / stats.total) * 100) : 0;
 
-        return NextResponse.json(stats);
-    } catch (error: any) {
-        console.error("[DASHBOARD_STATS]", error);
-        if (error.message === "Unauthorized") {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-        return NextResponse.json(
-            { error: "Internal server error" },
-            { status: 500 }
-        );
-    }
-}
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+
+    stats.weeklyInteractions = await prisma.interaction.count({
+        where: { userId: user.id, occurredAt: { gte: weekAgo } },
+    });
+
+    stats.pendingNudges = await prisma.nudge.count({
+        where: { userId: user.id, status: "PENDING" },
+    });
+
+    return NextResponse.json(stats);
+});

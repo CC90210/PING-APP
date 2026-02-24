@@ -122,9 +122,9 @@ export default async function ContactDetailPage({ params }: ContactPageProps) {
                                                         &ldquo;{interaction.summary}&rdquo;
                                                     </p>
                                                 )}
-                                                {interaction.topicsDiscussed.length > 0 && (
+                                                {interaction.topics.length > 0 && (
                                                     <div className="flex gap-2 mt-3">
-                                                        {interaction.topicsDiscussed.map(topic => (
+                                                        {interaction.topics.map(topic => (
                                                             <Badge key={topic} variant="outline" className="text-[10px] bg-white">
                                                                 {topic}
                                                             </Badge>

@@ -1,4 +1,4 @@
-// schema.prisma
+// prisma/schema.prisma
 
 generator client {
   provider = "prisma-client-js"
@@ -9,177 +9,191 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================================================
+// USER & AUTH (NextAuth.js v5 compatible)
+// ============================================================
+
 model User {
   id              String    @id @default(cuid())
   email           String    @unique
   name            String?
-  clerkId         String?   @unique
+  passwordHash    String?
+  avatarUrl       String?
   timezone        String    @default("America/Toronto")
-  onboardedAt     DateTime?
-  expoPushToken   String?
+
+  // Settings
+  dailyDigest     Boolean   @default(true)
+  digestTime      String    @default("08:00")
+  maxNudgesPerDay Int       @default(5)
+  quietHoursStart String    @default("22:00")
+  quietHoursEnd   String    @default("08:00")
+
+  // Onboarding
+  onboardingComplete Boolean @default(false)
+
+  // Subscription
+  plan            Plan      @default(FREE)
+
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
+  // Relations
   contacts        Contact[]
   interactions    Interaction[]
   nudges          Nudge[]
-  connectedChannels ConnectedChannel[]
-  settings        UserSettings?
+  accounts        Account[]
+  sessions        Session[]
   insights        RelationshipInsight[]
-  patterns        CommunicationPattern[]
+  importJobs      ImportJob[]
+
+  @@map("users")
 }
 
-model UserSettings {
-  id                    String  @id @default(cuid())
-  userId                String  @unique
-  user                  User    @relation(fields: [userId], references: [id])
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  access_token      String? @db.Text
+  refresh_token     String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
 
-  dailyDigestEnabled    Boolean @default(true)
-  dailyDigestTime       String  @default("09:00") // HH:mm format
-  weeklyReportEnabled   Boolean @default(true)
-  weeklyReportDay       Int     @default(1) // 0=Sun, 1=Mon...
-  nudgeFrequency        String  @default("balanced") // minimal, balanced, aggressive
-  aiMessageTone         String  @default("casual") // casual, professional, warm
-  pushNotifications     Boolean @default(true)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
 }
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+enum Plan {
+  FREE
+  PRO
+  BUSINESS
+}
+
+// ============================================================
+// CONTACTS
+// ============================================================
 
 model Contact {
-  id              String    @id @default(cuid())
-  userId          String
-  user            User      @relation(fields: [userId], references: [id])
+  id                    String        @id @default(cuid())
+  userId                String
 
-  // Identity
-  name            String
-  phone           String?
-  email           String?
-  avatarUrl       String?
-  notes           String?   @db.Text
+  // Core info
+  name                  String
+  phone                 String?
+  email                 String?
+  avatarUrl             String?
+  notes                 String?       @db.Text
 
-  // LinkedIn Info (Phase 3)
-  linkedinUrl       String?
-  linkedinId        String?
-  linkedinHeadline  String?
+  // Categorization
+  category              ContactCategory @default(FRIEND)
+  priority              Int           @default(0)
+  tags                  String[]
 
-  // Classification
-  category        ContactCategory @default(FRIEND)
-  tags            String[]  // flexible tagging: "client", "investor", "gym buddy"
-  priority        Int       @default(5) // 1-10, 10 being highest priority
-  isFavorite      Boolean   @default(false)
-
-  // Relationship Settings
-  desiredFrequencyDays  Int       @default(14) // how often user wants to interact
+  // Warmth engine
+  desiredFrequencyDays  Int           @default(14)
+  warmthScore           Float         @default(50)
+  warmthStatus          WarmthStatus  @default(YELLOW)
   lastInteractionAt     DateTime?
-  lastInteractionType   String?   // "message", "call", "meeting", "email"
-  lastInteractionChannel String?  // "whatsapp", "imessage", "telegram", "email"
+  lastInteractionChannel String?
+  lastOutboundAt        DateTime?
+  lastInboundAt         DateTime?
 
-  // Warmth Score (calculated)
-  warmthScore     Float     @default(100) // 0-100, decays over time
-  warmthStatus    WarmthStatus @default(GREEN) // GREEN, YELLOW, RED, DEAD
+  // Enrichment
+  company               String?
+  role                  String?
+  linkedinUrl           String?
+  birthday              DateTime?
+  location              String?
+
+  // Platform identifiers
+  linkedPlatforms       Json          @default("{}")
 
   // Metadata
-  birthday        DateTime?
-  company         String?
-  role            String?
-  location        String?
-  linkedPlatforms String[]  // ["whatsapp:+1234567890", "telegram:@handle", "imessage:email@x.com"]
+  isArchived            Boolean       @default(false)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  interactions    Interaction[]
-  nudges          Nudge[]
-  insights        RelationshipInsight[]
-  pattern         CommunicationPattern?
+  // Relations
+  user                  User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  interactions          Interaction[]
+  nudges                Nudge[]
+  patterns              CommunicationPattern?
+  insights              RelationshipInsight[]
 
   @@index([userId, warmthStatus])
-  @@index([userId, lastInteractionAt])
-}
-
-model RelationshipInsight {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  contactId   String?  // null for general insights
-  contact     Contact? @relation(fields: [contactId], references: [id])
-  
-  type        String   // "pattern" | "reciprocity" | "trajectory" | "coaching" | "prediction"
-  title       String   // "Jake responds best on Tuesdays"
-  body        String   @db.Text // Full insight text
-  actionable  Boolean  @default(false) // Does this have a CTA?
-  actionText  String?  // "Send a message now"
-  
-  confidence  Float    @default(0.7) // AI confidence level
-  isRead      Boolean  @default(false)
-  
-  validUntil  DateTime? // Some insights expire
-  createdAt   DateTime @default(now())
-  
-  @@index([userId, createdAt])
-  @@index([userId, contactId])
-}
-
-model CommunicationPattern {
-  id          String   @id @default(cuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  contactId   String   @unique
-  contact     Contact  @relation(fields: [contactId], references: [id])
-  
-  preferredDay        Int?    // 0-6 (Sun-Sat)
-  preferredHour       Int?    // 0-23
-  preferredChannel    String? // most used channel
-  avgResponseTimeHrs  Float?  // average response time in hours
-  initiationRatio     Float?  // 0-1, >0.5 means user initiates more
-  frequencyTrend      String? // "increasing" | "stable" | "decreasing"
-  
-  calculatedAt  DateTime @default(now())
-  
-  @@index([userId])
+  @@index([userId, warmthScore])
+  @@index([userId, category])
+  @@map("contacts")
 }
 
 enum ContactCategory {
   FAMILY
   FRIEND
-  CLOSE_FRIEND
-  COLLEAGUE
   CLIENT
-  PROSPECT
+  COLLEAGUE
   MENTOR
   ACQUAINTANCE
   OTHER
 }
 
 enum WarmthStatus {
-  GREEN   // Active - within desired frequency
-  YELLOW  // Cooling - approaching deadline
-  RED     // Cold - past desired frequency
-  DEAD    // Ghost - 3x past desired frequency, no interaction
+  GREEN
+  YELLOW
+  RED
+  DEAD
 }
 
+// ============================================================
+// INTERACTIONS
+// ============================================================
+
 model Interaction {
-  id              String    @id @default(cuid())
-  userId          String
-  user            User      @relation(fields: [userId], references: [id])
-  contactId       String
-  contact         Contact   @relation(fields: [contactId], references: [id])
+  id            String          @id @default(cuid())
+  userId        String
+  contactId     String
 
-  // Interaction Details
-  type            InteractionType
-  channel         String    // "whatsapp", "imessage", "telegram", "email", "phone", "in_person", "manual"
-  direction       String    // "inbound", "outbound", "mutual"
-  summary         String?   @db.Text // AI-generated summary of conversation
-  sentiment       String?   // "positive", "neutral", "negative"
-  topicsDiscussed String[]  // AI-extracted topics: ["work", "family", "project X"]
+  type          InteractionType
+  channel       String?
+  direction     Direction       @default(OUTBOUND)
 
-  // Source tracking
-  sourceMessageId String?   // external message ID from platform
-  isAutoLogged    Boolean   @default(true) // false if manually entered
+  summary       String?         @db.Text
+  topics        String[]
+  sentiment     String?
 
-  occurredAt      DateTime
-  createdAt       DateTime  @default(now())
+  occurredAt    DateTime        @default(now())
+  createdAt     DateTime        @default(now())
 
-  @@index([contactId, occurredAt])
-  @@index([userId, occurredAt])
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contact       Contact         @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([contactId, occurredAt(sort: Desc)])
+  @@index([userId, occurredAt(sort: Desc)])
+  @@map("interactions")
 }
 
 enum InteractionType {
@@ -187,46 +201,57 @@ enum InteractionType {
   CALL
   VIDEO_CALL
   EMAIL
-  MEETING
-  SOCIAL_MEDIA
   VOICE_NOTE
-  MANUAL_LOG
+  IN_PERSON
+  SOCIAL_MEDIA
+  MANUAL
 }
 
+enum Direction {
+  INBOUND
+  OUTBOUND
+  MUTUAL
+}
+
+// ============================================================
+// NUDGES
+// ============================================================
+
 model Nudge {
-  id              String    @id @default(cuid())
+  id              String      @id @default(cuid())
   userId          String
-  user            User      @relation(fields: [userId], references: [id])
   contactId       String
-  contact         Contact   @relation(fields: [contactId], references: [id])
 
-  // Nudge Content
   type            NudgeType
-  message         String    @db.Text // The nudge message shown to user
-  suggestedMessage String?  @db.Text // AI-generated outreach message
-  suggestedChannel String?  // recommended channel to reach out on
-  reason          String?   // "18 days since last contact", "birthday tomorrow"
-
-  // Status
   status          NudgeStatus @default(PENDING)
-  scheduledFor    DateTime
-  sentAt          DateTime?   // when nudge was delivered to user
-  actionedAt      DateTime?   // when user acted on it
-  actionTaken     String?     // "sent_message", "dismissed", "snoozed"
-  snoozeUntil     DateTime?
 
-  createdAt       DateTime  @default(now())
+  title           String
+  body            String?
+  suggestedAction String?
+  urgency         Int         @default(1)
+
+  scheduledFor    DateTime    @default(now())
+  snoozedUntil    DateTime?
+
+  actionedAt      DateTime?
+  dismissedAt     DateTime?
+  createdAt       DateTime    @default(now())
+
+  user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contact         Contact     @relation(fields: [contactId], references: [id], onDelete: Cascade)
 
   @@index([userId, status, scheduledFor])
+  @@map("nudges")
 }
 
 enum NudgeType {
-  WARMTH_DECAY    // relationship going cold
-  BIRTHDAY        // upcoming birthday
-  FOLLOW_UP       // scheduled follow-up
-  RE_ENGAGE       // haven't talked in a very long time
-  MILESTONE       // "1 year since you met Jake"
-  CUSTOM          // user-set reminder
+  WARMTH_DECAY
+  BIRTHDAY
+  RE_ENGAGE
+  FOLLOW_UP
+  RECIPROCITY
+  PREDICTED_DECAY
+  COACHING
 }
 
 enum NudgeStatus {
@@ -237,19 +262,95 @@ enum NudgeStatus {
   SNOOZED
 }
 
-model ConnectedChannel {
-  id              String    @id @default(cuid())
-  userId          String
-  user            User      @relation(fields: [userId], references: [id])
+// ============================================================
+// AI INTELLIGENCE
+// ============================================================
 
-  platform        String    // "whatsapp", "imessage", "telegram", "gmail", "google_calendar"
-  status          String    @default("connected") // "connected", "disconnected", "error"
-  credentials     Json?     // encrypted platform credentials/tokens
-  lastSyncAt      DateTime?
-  syncEnabled     Boolean   @default(true)
+model CommunicationPattern {
+  id                  String    @id @default(cuid())
+  contactId           String    @unique
 
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  preferredDay        Int?
+  preferredHour       Int?
+  preferredChannel    String?
 
-  @@unique([userId, platform])
+  avgResponseTimeHrs  Float?
+  initiationRatio     Float?
+  frequencyTrend      String?
+
+  lastAnalyzedAt      DateTime?
+  rawPatternData      Json?
+
+  updatedAt           DateTime  @updatedAt
+
+  contact             Contact   @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@map("communication_patterns")
+}
+
+model RelationshipInsight {
+  id            String    @id @default(cuid())
+  userId        String
+  contactId     String?
+
+  type          String
+  title         String
+  body          String    @db.Text
+
+  actionable    Boolean   @default(false)
+  actionText    String?
+
+  confidence    Float     @default(0.5)
+  isRead        Boolean   @default(false)
+  validUntil    DateTime?
+
+  createdAt     DateTime  @default(now())
+
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  contact       Contact?  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt(sort: Desc)])
+  @@map("relationship_insights")
+}
+
+// ============================================================
+// BACKGROUND JOBS (replaces Redis + BullMQ)
+// ============================================================
+
+model CronJobLog {
+  id          String    @id @default(cuid())
+  jobName     String
+  status      String
+  result      Json?
+  error       String?   @db.Text
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@index([jobName, startedAt(sort: Desc)])
+  @@map("cron_job_logs")
+}
+
+// ============================================================
+// CONTACT IMPORT
+// ============================================================
+
+model ImportJob {
+  id          String    @id @default(cuid())
+  userId      String
+  source      String
+  status      String    @default("pending")
+
+  totalFound  Int       @default(0)
+  imported    Int       @default(0)
+  merged      Int       @default(0)
+  skipped     Int       @default(0)
+
+  error       String?   @db.Text
+
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("import_jobs")
 }

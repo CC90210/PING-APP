@@ -2,20 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession, signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import {
     LayoutDashboard,
     Users,
     Bell,
     BarChart3,
-    Plug,
     Settings,
     PlusCircle,
-    Menu,
+    LogOut,
+    ChevronDown,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { UserButton } from "@clerk/nextjs";
+import { useState } from "react";
 
 const routes = [
     {
@@ -43,12 +43,6 @@ const routes = [
         color: "text-orange-700",
     },
     {
-        label: "Channels",
-        icon: Plug,
-        href: "/dashboard/channels",
-        color: "text-emerald-500",
-    },
-    {
         label: "Settings",
         icon: Settings,
         href: "/dashboard/settings",
@@ -57,6 +51,12 @@ const routes = [
 
 export function Sidebar() {
     const pathname = usePathname();
+    const { data: session } = useSession();
+    const [showMenu, setShowMenu] = useState(false);
+
+    const userInitial = session?.user?.name?.charAt(0)?.toUpperCase() || session?.user?.email?.charAt(0)?.toUpperCase() || "?";
+    const userName = session?.user?.name || "My Account";
+    const userEmail = session?.user?.email || "";
 
     return (
         <div className="space-y-4 py-4 flex flex-col h-full bg-[#111827] text-white">
@@ -75,7 +75,9 @@ export function Sidebar() {
                             href={route.href}
                             className={cn(
                                 "text-sm group flex p-3 w-full justify-start font-medium cursor-pointer hover:text-white hover:bg-white/10 rounded-lg transition",
-                                pathname === route.href ? "text-white bg-white/10" : "text-zinc-400"
+                                pathname === route.href
+                                    ? "text-white bg-white/10"
+                                    : "text-zinc-400"
                             )}
                         >
                             <div className="flex items-center flex-1">
@@ -92,16 +94,60 @@ export function Sidebar() {
                         Quick Actions
                     </p>
                 </div>
-                <Button variant="ghost" className="w-full justify-start text-zinc-400 hover:text-white hover:bg-white/10 mb-4">
-                    <PlusCircle className="h-5 w-5 mr-3 text-blue-500" />
-                    Add Contact
-                </Button>
-                <div className="flex items-center p-3 w-full justify-start hover:bg-white/5 rounded-lg transition border border-white/10">
-                    <UserButton afterSignOutUrl="/" />
-                    <div className="ml-3 flex flex-col items-start overflow-hidden">
-                        <p className="text-sm font-medium text-white truncate w-full">Account</p>
-                        <p className="text-xs text-zinc-500 truncate w-full">Manage Profile</p>
-                    </div>
+                <Link href="/dashboard/contacts?new=true">
+                    <Button
+                        variant="ghost"
+                        className="w-full justify-start text-zinc-400 hover:text-white hover:bg-white/10 mb-4"
+                    >
+                        <PlusCircle className="h-5 w-5 mr-3 text-blue-500" />
+                        Add Contact
+                    </Button>
+                </Link>
+
+                {/* User menu */}
+                <div className="relative">
+                    <button
+                        onClick={() => setShowMenu(!showMenu)}
+                        className="flex items-center w-full p-3 hover:bg-white/5 rounded-lg transition border border-white/10"
+                    >
+                        {session?.user?.image ? (
+                            <img
+                                src={session.user.image}
+                                alt=""
+                                className="h-8 w-8 rounded-full object-cover"
+                            />
+                        ) : (
+                            <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold">
+                                {userInitial}
+                            </div>
+                        )}
+                        <div className="ml-3 flex flex-col items-start overflow-hidden flex-1">
+                            <p className="text-sm font-medium text-white truncate w-full text-left">
+                                {userName}
+                            </p>
+                            <p className="text-xs text-zinc-500 truncate w-full text-left">
+                                {userEmail}
+                            </p>
+                        </div>
+                        <ChevronDown
+                            className={cn(
+                                "h-4 w-4 text-zinc-500 transition-transform",
+                                showMenu && "rotate-180"
+                            )}
+                        />
+                    </button>
+
+                    {showMenu && (
+                        <div className="absolute bottom-full left-0 right-0 mb-2 bg-[#1e293b] border border-white/10 rounded-lg shadow-xl overflow-hidden">
+                            <button
+                                onClick={() => signOut({ callbackUrl: "/" })}
+                                className="flex items-center w-full px-4 py-3 text-sm text-zinc-300 hover:bg-white/10 hover:text-white transition"
+                            >
+                                <LogOut className="h-4 w-4 mr-3" />
+                                Sign out
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
